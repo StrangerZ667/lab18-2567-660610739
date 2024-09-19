@@ -169,10 +169,6 @@ export const POST = async (request: NextRequest) => {
 export const DELETE = async (request: NextRequest) => {
   //check token
   //verify token and get "studentId" and "role" information here
-  
-  let studentId = null;
-  let role = null;
-  const secret = process.env.JWT_SECRET || "This is my special secret";
   const rawAuthHeader = headers().get("authorization");
 
   if (!rawAuthHeader || !rawAuthHeader.startsWith("Bearer ")) {
@@ -184,9 +180,12 @@ export const DELETE = async (request: NextRequest) => {
       { status: 401 }
     );
   }
-  
-  const token = rawAuthHeader.split(" ")[1] ;
 
+  const token = rawAuthHeader.split(" ")[1] ;
+  const secret = process.env.JWT_SECRET || "This is my special secret";
+  
+  let studentId = null;
+  let role = null;
   
   //if role is "ADMIN", send the following response
   try {
@@ -201,7 +200,7 @@ export const DELETE = async (request: NextRequest) => {
       },
       { status: 401 }
     );
-    }
+  }
   
   if (role === "ADMIN") {
     return NextResponse.json(
