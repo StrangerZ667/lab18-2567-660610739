@@ -28,9 +28,9 @@ export const GET = async (request: NextRequest) => {
   try {
     const payload = jwt.verify(token, secret);
     studentId = (<Payload>payload).studentId;
+    role = (<Payload>payload).role;
 
     //read role information from "payload" here (just one line code!)
-    //role = ...
   } catch {
     return NextResponse.json(
       {
@@ -48,9 +48,15 @@ export const GET = async (request: NextRequest) => {
   // }
 
   const courseNoList = [];
-  for (const enroll of DB.enrollments) {
-    if (enroll.studentId === studentId) {
-      courseNoList.push(enroll.courseNo);
+  if (role === "ADMIN") {
+    for (const enroll of DB.enrollments) {
+      courseNoList.push(enroll);
+    }
+  } else {
+    for (const enroll of DB.enrollments) {
+      if (enroll.studentId === studentId) {
+        courseNoList.push(enroll.courseNo);
+      }
     }
   }
   return NextResponse.json({
@@ -71,7 +77,6 @@ export const POST = async (request: NextRequest) => {
       { status: 401 }
     );
   }
-
   const token = rawAuthHeader.split(" ")[1];
 
   const secret = process.env.JWT_SECRET || "This is my special secret";
@@ -86,6 +91,7 @@ export const POST = async (request: NextRequest) => {
 
     //read role information from "payload" here (just one line code!)
     //role = ...
+    role = (<Payload>payload).role;
   } catch {
     return NextResponse.json(
       {
@@ -97,13 +103,16 @@ export const POST = async (request: NextRequest) => {
   }
 
   //if role is "ADMIN", send the following response
-  // return NextResponse.json(
-  //   {
-  //     ok: true,
-  //     message: "Only Student can access this API route",
-  //   },
-  //   { status: 403 }
-  // );
+  if(role === "ADMIN"){
+   return NextResponse.json(
+     {
+       ok: true,
+       message: "Only Student can access this API route",
+     },
+     { status: 403 }
+    );
+  }
+  
 
   //read body request
   const body = await request.json();
@@ -160,17 +169,49 @@ export const POST = async (request: NextRequest) => {
 export const DELETE = async (request: NextRequest) => {
   //check token
   //verify token and get "studentId" and "role" information here
+  
   let studentId = null;
   let role = null;
+  const secret = process.env.JWT_SECRET || "This is my special secret";
+  const rawAuthHeader = headers().get("authorization");
 
+  if (!rawAuthHeader || !rawAuthHeader.startsWith("Bearer ")) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Authorization header is required",
+      },
+      { status: 401 }
+    );
+  }
+  
+  const token = rawAuthHeader.split(" ")[1] ;
+
+  
   //if role is "ADMIN", send the following response
-  // return NextResponse.json(
-  //   {
-  //     ok: true,
-  //     message: "Only Student can access this API route",
-  //   },
-  //   { status: 403 }
-  // );
+  try {
+    const payload = jwt.verify(token, secret);
+    studentId = (<Payload>payload).studentId;
+    role = (<Payload>payload).role;
+  } catch {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Invalid token",
+      },
+      { status: 401 }
+    );
+    }
+  
+  if (role === "ADMIN") {
+    return NextResponse.json(
+      {
+        ok: true,
+        message: "Only Student can access this API route",
+      },
+      { status: 403 }
+    );
+  }
 
   //get courseNo from body and validate it
   const body = await request.json();
